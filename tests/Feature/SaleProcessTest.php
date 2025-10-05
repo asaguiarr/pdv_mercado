@@ -33,7 +33,7 @@ class SaleProcessTest extends TestCase
                 [
                     'product_id' => $product->id,
                     'quantity' => 2,
-                    'price' => 50,
+                    'price' => $product->sale_price,
                 ],
             ],
             'payment_method' => 'dinheiro',
@@ -71,7 +71,7 @@ class SaleProcessTest extends TestCase
                 [
                     'product_id' => $product->id,
                     'quantity' => 2,
-                    'price' => 50,
+                    'price' => $product->sale_price,
                 ],
             ],
             'payment_method' => 'dinheiro',
@@ -95,7 +95,7 @@ class SaleProcessTest extends TestCase
                 [
                     'product_id' => $product->id,
                     'quantity' => 2,
-                    'price' => 50,
+                    'price' => $product->sale_price,
                 ],
             ],
             'payment_method' => 'debito',
@@ -133,7 +133,7 @@ class SaleProcessTest extends TestCase
                 [
                     'product_id' => $product->id,
                     'quantity' => 2,
-                    'price' => 50,
+                    'price' => $product->sale_price,
                 ],
             ],
             'payment_method' => 'credito',
@@ -167,7 +167,7 @@ class SaleProcessTest extends TestCase
                 [
                     'product_id' => $product->id,
                     'quantity' => 2,
-                    'price' => 50,
+                    'price' => $product->sale_price,
                 ],
             ],
             'payment_method' => 'pix',

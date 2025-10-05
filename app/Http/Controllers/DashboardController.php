@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\Sale;
+use App\Models\AccountsReceivable;
 
 class DashboardController extends Controller
 {
@@ -16,6 +17,7 @@ class DashboardController extends Controller
         $totalCustomers = Customer::count();
         $totalOrders = Order::count();
         $totalSales = Sale::count();
+        $totalAccountsReceivable = AccountsReceivable::where('status', 'pending')->count();
 
         // Cards do dashboard
         $data['cards'] = [
@@ -42,6 +44,12 @@ class DashboardController extends Controller
                 'value' => $totalSales,
                 'icon' => 'fas fa-dollar-sign',
                 'color' => 'info'
+            ],
+            [
+                'label' => 'Contas a Receber',
+                'value' => $totalAccountsReceivable,
+                'icon' => 'fas fa-hand-holding-usd',
+                'color' => 'danger'
             ]
         ];
 

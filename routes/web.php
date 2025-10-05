@@ -148,4 +148,6 @@ require __DIR__.'/orders.php';
 require __DIR__.'/pdv.php';
 
 Route::middleware(['auth', 'role:admin,super_admin'])->resource('accounts_receivable', AccountsReceivableController::class);
+Route::middleware(['auth', 'role:admin,super_admin'])->patch('accounts_receivable/{id}/mark-as-paid', [AccountsReceivableController::class, 'markAsPaid'])->name('accounts_receivable.mark_as_paid');
 Route::middleware(['auth', 'role:admin,super_admin'])->resource('accounts_payable', AccountsPayableController::class);
+Route::middleware(['auth', 'role:admin,super_admin'])->get('cash_flow', [App\Http\Controllers\CashFlowController::class, 'index'])->name('cash_flow.index');

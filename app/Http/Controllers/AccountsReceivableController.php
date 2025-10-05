@@ -2,90 +2,87 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\AccountsReceivable;
 use Illuminate\Http\Request;
+use App\Models\AccountsReceivable;
+use App\Models\Customer;
+use Illuminate\Support\Facades\Auth;
 
 class AccountsReceivableController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        $accountsReceivable = AccountsReceivable::with(['customer', 'order'])->paginate(15);
-        return view('accounts_receivable.index', compact('accountsReceivable'));
+        $receivables = AccountsReceivable::with('customer')->paginate(10);
+        return view('accounts_receivable.index', compact('receivables'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
-        return view('accounts_receivable.create');
+        $customers = Customer::all();
+        return view('accounts_receivable.create', compact('customers'));
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $request->validate([
             'customer_id' => 'required|exists:customers,id',
-            'order_id' => 'nullable|exists:orders,id',
             'amount' => 'required|numeric|min:0',
             'due_date' => 'required|date',
-            'paid_date' => 'nullable|date|after_or_equal:due_date',
-            'status' => 'required|in:pending,paid',
+            'description' => 'nullable|string',
         ]);
 
-        AccountsReceivable::create($validated);
+        AccountsReceivable::create([
+            'customer_id' => $request->customer_id,
+            'amount' => $request->amount,
+            'due_date' => $request->due_date,
+            'description' => $request->description,
+            'status' => 'pending',
+        ]);
 
-        return redirect()->route('accounts_receivable.index')->with('success', 'Conta a Receber criada com sucesso.');
+        return redirect()->route('accounts_receivable.index')->with('success', 'Conta a receber criada com sucesso.');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(AccountsReceivable $accountsReceivable)
+    public function show($id)
     {
-        $accountsReceivable->load(['customer', 'order']);
-        return view('accounts_receivable.show', compact('accountsReceivable'));
+        $receivable = AccountsReceivable::with('customer')->findOrFail($id);
+        return view('accounts_receivable.show', compact('receivable'));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(AccountsReceivable $accountsReceivable)
+    public function edit($id)
     {
-        return view('accounts_receivable.edit', compact('accountsReceivable'));
+        $receivable = AccountsReceivable::findOrFail($id);
+        $customers = Customer::all();
+        return view('accounts_receivable.edit', compact('receivable', 'customers'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, AccountsReceivable $accountsReceivable)
+    public function update(Request $request, $id)
     {
-        $validated = $request->validate([
+        $request->validate([
             'customer_id' => 'required|exists:customers,id',
-            'order_id' => 'nullable|exists:orders,id',
             'amount' => 'required|numeric|min:0',
             'due_date' => 'required|date',
-            'paid_date' => 'nullable|date|after_or_equal:due_date',
-            'status' => 'required|in:pending,paid',
+            'status' => 'required|in:pending,paid,overdue',
+            'description' => 'nullable|string',
         ]);
 
-        $accountsReceivable->update($validated);
+        $receivable = AccountsReceivable::findOrFail($id);
+        $receivable->update($request->all());
 
-        return redirect()->route('accounts_receivable.index')->with('success', 'Conta a Receber atualizada com sucesso.');
+        return redirect()->route('accounts_receivable.index')->with('success', 'Conta a receber atualizada com sucesso.');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(AccountsReceivable $accountsReceivable)
+    public function destroy($id)
     {
-        $accountsReceivable->delete();
+        $receivable = AccountsReceivable::findOrFail($id);
+        $receivable->delete();
 
-        return redirect()->route('accounts_receivable.index')->with('success', 'Conta a Receber excluída com sucesso.');
+        return redirect()->route('accounts_receivable.index')->with('success', 'Conta a receber excluída com sucesso.');
+    }
+
+    public function markAsPaid($id)
+    {
+        $receivable = AccountsReceivable::findOrFail($id);
+        $receivable->update(['status' => 'paid']);
+
+        return redirect()->route('accounts_receivable.index')->with('success', 'Conta a receber marcada como paga.');
     }
 }

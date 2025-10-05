@@ -13,7 +13,7 @@
             <p><strong>Contato:</strong> {{ $customer->contact }}</p>
             <p><strong>RG:</strong> {{ $customer->rg }}</p>
             <p><strong>CPF:</strong> {{ $customer->cpf }}</p>
-            <p><strong>Data de Nascimento:</strong> {{ $customer->birthdate->format('d/m/Y') }}</p>
+            <p><strong>Data de Nascimento:</strong> {{ $customer->birthdate ? $customer->birthdate->format('d/m/Y') : 'Não informado' }}</p>
             <p><strong>Endereço:</strong> {{ $customer->address }}</p>
             @if($customer->photo)
                 <img src="{{ asset('storage/' . $customer->photo) }}" alt="Foto do Cliente" class="img-thumbnail" style="max-width: 200px;">

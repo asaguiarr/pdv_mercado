@@ -20,9 +20,9 @@ class StockTest extends TestCase
     {
         parent::setUp();
 
-        // Create a user with estoquista role
+        // Create a user with admin role (to have access to PDV and stock routes)
         $this->user = User::factory()->create([
-            'role' => 'estoquista'
+            'role' => 'admin'
         ]);
     }
 

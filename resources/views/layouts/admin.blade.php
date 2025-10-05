@@ -88,6 +88,20 @@
                 </a>
                 @endif
 
+                <!-- Contas a Receber (Admin/Super Admin) -->
+                @if(Auth::user()->hasAnyRole(['admin', 'super_admin']))
+                <a href="{{ route('accounts_receivable.index') }}" class="sidebar-icon" title="Contas a Receber">
+                    <i class="fas fa-hand-holding-usd fs-5 text-light hover-text-warning"></i>
+                </a>
+                @endif
+
+                <!-- Fluxo de Caixa (Admin/Super Admin) -->
+                @if(Auth::user()->hasAnyRole(['admin', 'super_admin']))
+                <a href="{{ route('cash_flow.index') }}" class="sidebar-icon" title="Fluxo de Caixa">
+                    <i class="fas fa-chart-line fs-5 text-light hover-text-warning"></i>
+                </a>
+                @endif
+
                 <!-- Clientes (Admin/Super Admin) -->
                 @if(Auth::user()->hasAnyRole(['admin', 'super_admin']))
                 <a href="{{ route('customers.index') }}" class="sidebar-icon" title="Clientes">
