@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AccountsPayable;
+use App\Models\Supplier;
 use Illuminate\Http\Request;
 
 class AccountsPayableController extends Controller
@@ -21,7 +22,8 @@ class AccountsPayableController extends Controller
      */
     public function create()
     {
-        return view('accounts_payable.create');
+        $suppliers = Supplier::all();
+        return view('accounts_payable.create', compact('suppliers'));
     }
 
     /**
@@ -56,7 +58,8 @@ class AccountsPayableController extends Controller
      */
     public function edit(AccountsPayable $accountsPayable)
     {
-        return view('accounts_payable.edit', compact('accountsPayable'));
+        $suppliers = Supplier::all();
+        return view('accounts_payable.edit', compact('accountsPayable', 'suppliers'));
     }
 
     /**

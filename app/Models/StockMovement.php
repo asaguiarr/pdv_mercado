@@ -17,10 +17,14 @@ class StockMovement extends Model
         'reference_type',
         'notes',
         'user_id',
+        'invoice_number',
+        'supplier_id',
+        'purchase_date',
     ];
 
     protected $casts = [
         'quantity' => 'decimal:2',
+        'purchase_date' => 'date',
     ];
 
     public function product()
@@ -31,5 +35,10 @@ class StockMovement extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function supplier()
+    {
+        return $this->belongsTo(\App\Models\Supplier::class);
     }
 }

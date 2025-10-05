@@ -68,14 +68,32 @@
                 </a>
 
                 <!-- Produtos (Admin/Super Admin) -->
+                @if(Auth::user()->hasAnyRole(['admin', 'super_admin']))
                 <a href="{{ route('products.index') }}" class="sidebar-icon" title="Produtos">
                     <i class="fas fa-box-open fs-5 text-light hover-text-warning"></i>
                 </a>
+                @endif
+
+                <!-- Fornecedores (Admin/Super Admin) -->
+                @if(Auth::user()->hasAnyRole(['admin', 'super_admin']))
+                <a href="{{ route('suppliers.index') }}" class="sidebar-icon" title="Fornecedores">
+                    <i class="fas fa-truck fs-5 text-light hover-text-warning"></i>
+                </a>
+                @endif
+
+                <!-- Contas a Pagar (Admin/Super Admin) -->
+                @if(Auth::user()->hasAnyRole(['admin', 'super_admin']))
+                <a href="{{ route('accounts_payable.index') }}" class="sidebar-icon" title="Contas a Pagar">
+                    <i class="fas fa-money-bill-wave fs-5 text-light hover-text-warning"></i>
+                </a>
+                @endif
 
                 <!-- Clientes (Admin/Super Admin) -->
+                @if(Auth::user()->hasAnyRole(['admin', 'super_admin']))
                 <a href="{{ route('customers.index') }}" class="sidebar-icon" title="Clientes">
                     <i class="fas fa-users fs-5 text-light hover-text-warning"></i>
                 </a>
+                @endif
 
                 <!-- Pedidos (Admin/Super Admin) -->
                 <a href="{{ route('orders.index') }}" class="sidebar-icon" title="Pedidos">

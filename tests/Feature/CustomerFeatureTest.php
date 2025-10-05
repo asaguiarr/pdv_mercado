@@ -6,6 +6,7 @@ use Tests\TestCase;
 use App\Models\User;
 use App\Models\Customer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 
 class CustomerFeatureTest extends TestCase
 {
@@ -19,11 +20,11 @@ class CustomerFeatureTest extends TestCase
         // Create an admin user for authentication
         $this->adminUser = User::factory()->create([
             'role' => 'admin',
-            'active' => true,
+            'active' => 1,
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function admin_can_view_customers_index()
     {
         $response = $this->actingAs($this->adminUser)->get(route('customers.index'));
@@ -31,7 +32,7 @@ class CustomerFeatureTest extends TestCase
         $response->assertViewIs('customers.index');
     }
 
-    /** @test */
+    #[Test]
     public function admin_can_create_a_customer()
     {
         $customerData = [
@@ -39,6 +40,9 @@ class CustomerFeatureTest extends TestCase
             'contact' => '123456789',
             'address' => '123 Test St',
             'email' => 'test@example.com',
+            'rg' => '123456789',
+            'cpf' => '12345678901',
+            'birthdate' => '1990-01-01',
         ];
 
         $response = $this->actingAs($this->adminUser)->post(route('customers.store'), $customerData);
@@ -46,7 +50,7 @@ class CustomerFeatureTest extends TestCase
         $this->assertDatabaseHas('customers', ['email' => 'test@example.com']);
     }
 
-    /** @test */
+    #[Test]
     public function admin_can_view_a_customer()
     {
         $customer = Customer::factory()->create();
@@ -57,7 +61,7 @@ class CustomerFeatureTest extends TestCase
         $response->assertSee($customer->name);
     }
 
-    /** @test */
+    #[Test]
     public function admin_can_update_a_customer()
     {
         $customer = Customer::factory()->create();
@@ -67,6 +71,9 @@ class CustomerFeatureTest extends TestCase
             'contact' => '987654321',
             'address' => '456 Updated St',
             'email' => 'updated@example.com',
+            'rg' => '987654321',
+            'cpf' => '98765432109',
+            'birthdate' => '1995-05-05',
         ];
 
         $response = $this->actingAs($this->adminUser)->put(route('customers.update', $customer->id), $updateData);
@@ -74,7 +81,7 @@ class CustomerFeatureTest extends TestCase
         $this->assertDatabaseHas('customers', ['email' => 'updated@example.com']);
     }
 
-    /** @test */
+    #[Test]
     public function admin_can_delete_a_customer()
     {
         $customer = Customer::factory()->create();

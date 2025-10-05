@@ -42,6 +42,11 @@ Route::middleware('auth')->get('/dashboard', [DashboardController::class, 'index
 Route::middleware(['auth', 'role:admin,super_admin'])->resource('products', ProductController::class);
 
 // ==========================================
+// FORNECEDORES
+// ==========================================
+Route::middleware(['auth', 'role:admin,super_admin'])->resource('suppliers', \App\Http\Controllers\SupplierController::class);
+
+// ==========================================
 // CLIENTES
 // ==========================================
 Route::middleware(['auth', 'role:admin,super_admin'])->resource('customers', CustomerController::class);
@@ -107,6 +112,8 @@ Route::middleware(['auth', 'role:estoquista,admin,super_admin'])
         Route::get('/', [StockController::class, 'index'])->name('index');
         Route::get('/entrada', [StockController::class, 'entrada'])->name('entrada');
         Route::post('/entrada', [StockController::class, 'storeEntrada'])->name('entrada.store');
+        Route::get('/invoice-entrada', [StockController::class, 'invoiceEntrada'])->name('invoice_entrada');
+        Route::post('/invoice-entrada', [StockController::class, 'storeInvoiceEntrada'])->name('invoice_entrada.store');
         Route::get('/saida', [StockController::class, 'saida'])->name('saida');
         Route::post('/saida', [StockController::class, 'storeSaida'])->name('saida.store');
         Route::get('/relatorio', [StockController::class, 'relatorio'])->name('relatorio');

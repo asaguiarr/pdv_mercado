@@ -108,9 +108,9 @@
                             <select id="payment-method" name="payment_method" class="form-select" required>
                                 <option value="">Selecionar...</option>
                                 <option value="dinheiro">Dinheiro</option>
-                                <option value="cartao">Cartão</option>
+                                <option value="debito">Cartão de Débito</option>
+                                <option value="credito">Cartão de Crédito</option>
                                 <option value="pix">PIX</option>
-                                <option value="misto">Misto</option>
                             </select>
                         </div>
 

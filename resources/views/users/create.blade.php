@@ -5,7 +5,7 @@
 @section('content')
 <h1 class="h3 mb-4">➕ Criar Usuário</h1>
 
-<form action="{{ route('users.store') }}" method="POST" class="card shadow-sm p-4">
+<form action="{{ route('admin.users.store') }}" method="POST" class="card shadow-sm p-4">
     @csrf
 
     <div class="mb-3">
@@ -29,16 +29,15 @@
     </div>
 
     <div class="mb-3">
-        <label class="form-label">Papéis</label>
-        <select name="roles[]" class="form-select" multiple required>
+        <label class="form-label">Papel</label>
+        <select name="role" class="form-select" required>
             @foreach($roles as $role)
-                <option value="{{ $role->name }}">{{ ucfirst($role->name) }}</option>
+                <option value="{{ $role }}">{{ ucfirst($role) }}</option>
             @endforeach
         </select>
-        <small class="text-muted">Segure CTRL para selecionar múltiplos.</small>
     </div>
 
     <button type="submit" class="btn btn-success">Salvar</button>
-    <a href="{{ route('users.index') }}" class="btn btn-secondary">Cancelar</a>
+    <a href="{{ route('admin.users.index') }}" class="btn btn-secondary">Cancelar</a>
 </form>
 @endsection

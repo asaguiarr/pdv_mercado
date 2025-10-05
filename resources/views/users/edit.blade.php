@@ -5,7 +5,7 @@
 @section('content')
 <h1 class="h3 mb-4">✏️ Editar Usuário</h1>
 
-<form action="{{ route('users.update', $user) }}" method="POST" class="card shadow-sm p-4">
+<form action="{{ route('admin.users.update', $user) }}" method="POST" class="card shadow-sm p-4">
     @csrf @method('PUT')
 
     <div class="mb-3">
@@ -29,17 +29,17 @@
     </div>
 
     <div class="mb-3">
-        <label class="form-label">Papéis</label>
-        <select name="roles[]" class="form-select" multiple required>
+        <label class="form-label">Papel</label>
+        <select name="role" class="form-select" required>
             @foreach($roles as $role)
-                <option value="{{ $role->name }}" {{ $user->roles->contains('name', $role->name) ? 'selected' : '' }}>
-                    {{ ucfirst($role->name) }}
+                <option value="{{ $role }}" {{ $user->role == $role ? 'selected' : '' }}>
+                    {{ ucfirst($role) }}
                 </option>
             @endforeach
         </select>
     </div>
 
     <button type="submit" class="btn btn-success">Atualizar</button>
-    <a href="{{ route('users.index') }}" class="btn btn-secondary">Cancelar</a>
+    <a href="{{ route('admin.users.index') }}" class="btn btn-secondary">Cancelar</a>
 </form>
 @endsection

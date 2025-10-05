@@ -5,7 +5,7 @@
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1 class="h3 fw-bold">👥 Usuários</h1>
-    <a href="{{ route('users.create') }}" class="btn btn-primary">➕ Novo Usuário</a>
+    <a href="{{ route('admin.users.create') }}" class="btn btn-primary">➕ Novo Usuário</a>
 </div>
 
 @if(session('success'))
@@ -32,13 +32,11 @@
                     <td class="fw-semibold">{{ $user->name }}</td>
                     <td>{{ $user->email }}</td>
                     <td>
-                        @foreach($user->roles as $role)
-                            <span class="badge bg-secondary">{{ $role->name }}</span>
-                        @endforeach
+                        <span class="badge bg-secondary">{{ ucfirst($user->role) }}</span>
                     </td>
                     <td>
-                        <a href="{{ route('users.edit', $user) }}" class="btn btn-sm btn-warning">✏️ Editar</a>
-                        <form action="{{ route('users.destroy', $user) }}" method="POST" class="d-inline">
+                        <a href="{{ route('admin.users.edit', $user) }}" class="btn btn-sm btn-warning">✏️ Editar</a>
+                        <form action="{{ route('admin.users.destroy', $user) }}" method="POST" class="d-inline">
                             @csrf @method('DELETE')
                             <button class="btn btn-sm btn-danger" onclick="return confirm('Tem certeza?')">🗑️ Excluir</button>
                         </form>

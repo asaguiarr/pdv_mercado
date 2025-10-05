@@ -25,7 +25,14 @@
             <div class="row mb-3">
                 <div class="col-md-6">
                     <label class="form-label">Contato</label>
-                    <input type="text" name="contact" class="form-control" value="{{ old('contact', $customer->contact) }}" required>
+                    <div class="input-group">
+                        <input type="text" name="contact" class="form-control" value="{{ old('contact', $customer->contact) }}" required>
+                        @if($customer->contact)
+                        <a href="https://wa.me/{{ preg_replace('/\D/', '', $customer->contact) }}" class="btn btn-success" target="_blank" title="Mensagem no WhatsApp">
+                            <i class="fab fa-whatsapp"></i>
+                        </a>
+                        @endif
+                    </div>
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">CPF</label>

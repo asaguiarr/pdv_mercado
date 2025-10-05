@@ -16,7 +16,8 @@ class AdminUserController extends Controller
 
     public function create()
     {
-        return view('users.create');
+        $roles = ['user', 'admin', 'super_admin', 'cashier', 'estoquista'];
+        return view('users.create', compact('roles'));
     }
 
     public function store(Request $request)
@@ -41,7 +42,8 @@ class AdminUserController extends Controller
 
     public function edit(User $user)
     {
-        return view('users.edit', compact('user'));
+        $roles = ['user', 'admin', 'super_admin', 'cashier', 'estoquista'];
+        return view('users.edit', compact('user', 'roles'));
     }
 
     public function update(Request $request, User $user)

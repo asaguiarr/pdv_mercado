@@ -4,7 +4,8 @@
 <div class="container">
     <h1>Controle de Estoque</h1>
 
-    <a href="{{ route('estoque.entrada') }}" class="btn btn-success">Registrar Entrada</a>
+    <a href="{{ route('estoque.entrada') }}" class="btn btn-success">Registrar Entrada Manual</a>
+    <a href="{{ route('estoque.invoice_entrada') }}" class="btn btn-primary">Entrada por Nota Fiscal</a>
     <a href="{{ route('estoque.saida') }}" class="btn btn-danger">Registrar Saída</a>
     <a href="{{ route('estoque.relatorio') }}" class="btn btn-info">Relatório</a>
 

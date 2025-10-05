@@ -8,6 +8,7 @@ use App\Models\Product;
 use App\Models\StockMovement;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\Test;
 
 class StockTest extends TestCase
 {
@@ -25,7 +26,7 @@ class StockTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function adding_to_cart_reduces_stock_and_creates_stock_movement_out()
     {
         $product = Product::factory()->create(['stock' => 10]);
@@ -52,7 +53,7 @@ class StockTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function removing_from_cart_increases_stock_and_creates_stock_movement_in()
     {
         $product = Product::factory()->create(['stock' => 10]);
@@ -79,7 +80,7 @@ class StockTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function manual_entrada_increases_stock_and_creates_stock_movement_in()
     {
         $product = Product::factory()->create(['stock' => 5]);
@@ -106,7 +107,7 @@ class StockTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function concurrent_requests_dont_allow_negative_stock()
     {
         $product = Product::factory()->create(['stock' => 5]);
@@ -136,7 +137,7 @@ class StockTest extends TestCase
         $this->assertEquals(0, $product->stock);
     }
 
-    /** @test */
+    #[Test]
     public function stock_report_shows_correct_aggregates()
     {
         $product = Product::factory()->create(['stock' => 10]);
@@ -175,7 +176,7 @@ class StockTest extends TestCase
         $this->assertEquals(5, $stockReport[0]->total_out);
     }
 
-    /** @test */
+    #[Test]
     public function insufficient_stock_returns_422_error()
     {
         $product = Product::factory()->create(['stock' => 2]);

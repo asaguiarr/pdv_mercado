@@ -75,7 +75,8 @@ class CustomerController extends Controller
         $histories = $customer->recentHistories();
         $pendingSales = Sale::where('customer_id', $customer->id)->where('status', 'pending')->get();
         $receivables = AccountsReceivable::where('customer_id', $customer->id)->where('status', 'pending')->get();
-        return view('customers.show', compact('customer', 'histories', 'pendingSales', 'receivables'));
+        $orders = $customer->orders()->with('sale')->get(); // Include orders with related sale
+        return view('customers.show', compact('customer', 'histories', 'pendingSales', 'receivables', 'orders'));
     }
 
     /**
@@ -134,15 +135,15 @@ class CustomerController extends Controller
      */
     public function destroy(Customer $customer)
     {
-        $customer->delete();
-
-        // Log history
+        // Log history before deleting
         CustomerHistory::create([
             'customer_id' => $customer->id,
             'action' => 'deleted',
             'description' => 'Customer deleted',
             'created_at' => now(),
         ]);
+
+        $customer->delete();
 
         return redirect()->route('customers.index')->with('success', 'Customer deleted successfully.');
     }

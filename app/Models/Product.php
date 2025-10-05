@@ -14,6 +14,7 @@ class Product extends Model
         'name',
         'cost_price',
         'profit_margin',
+        'sale_price',
         'stock',
         'active',
         'description',

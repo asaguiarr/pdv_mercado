@@ -86,6 +86,30 @@
                         </a>
                     </div>
                 @endif
+                @if(auth()->user()->hasAnyRole(['admin', 'super_admin']))
+                    <div class="col-md-3">
+                        <a href="{{ route('suppliers.index') }}" class="btn btn-primary btn-lg w-100">
+                            <i class="fas fa-truck me-2"></i>
+                            <br>Fornecedores
+                        </a>
+                    </div>
+                @endif
+                @if(auth()->user()->hasAnyRole(['admin', 'super_admin']))
+                    <div class="col-md-3">
+                        <a href="{{ route('accounts_payable.index') }}" class="btn btn-warning btn-lg w-100">
+                            <i class="fas fa-money-bill-wave me-2"></i>
+                            <br>Contas a Pagar
+                        </a>
+                    </div>
+                @endif
+                @if(auth()->user()->hasAnyRole(['estoquista', 'admin', 'super_admin']))
+                    <div class="col-md-3">
+                        <a href="{{ route('estoque.invoice_entrada') }}" class="btn btn-success btn-lg w-100">
+                            <i class="fas fa-file-invoice me-2"></i>
+                            <br>Entrada NF
+                        </a>
+                    </div>
+                @endif
             </div>
         </div>
     </div>

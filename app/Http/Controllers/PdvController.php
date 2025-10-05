@@ -10,6 +10,8 @@ use App\Models\CashStatus;
 use App\Models\Customer;
 use App\Models\StockMovement;
 use App\Models\Order;
+use App\Models\CashMovement;
+use App\Models\CustomerHistory;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -29,7 +31,6 @@ class PdvController extends Controller
         $customers = Customer::all();
         return view('pdv.create', compact('products', 'customers'));
     }
-
     public function processSale(Request $request)
     {
         $request->validate([
@@ -39,63 +40,143 @@ class PdvController extends Controller
             'cart.*.price' => 'required|numeric|min:0',
             'discount' => 'nullable|numeric|min:0',
             'customer_id' => 'nullable|exists:customers,id',
-            'payment_method' => 'required|string',
+            'payment_method' => 'required|in:dinheiro,debito,credito,pix,prazo',
+            'delivery_type' => 'required|in:retirada,entrega',
         ]);
 
-        $sale = DB::transaction(function () use ($request) {
+        // Require customer for delivery or credit sales
+        if (($request->delivery_type === 'entrega' || $request->payment_method === 'prazo') && !$request->customer_id) {
+            return response()->json(['error' => 'Cliente é obrigatório para entregas ou vendas a prazo.'], 422);
+        }
+
+        // Check if cash is open only for cash payments
+        $cashStatus = null;
+        if ($request->payment_method === 'dinheiro') {
+            $cashStatus = CashStatus::where('user_id', Auth::id())->where('status', 'open')->first();
+            if (!$cashStatus) {
+                return response()->json(['error' => 'Caixa não está aberto. Abra o caixa antes de realizar vendas em dinheiro.'], 422);
+            }
+        }
+
+        $sale = DB::transaction(function () use ($request, $cashStatus) {
             $total = 0;
             foreach ($request->cart as $item) {
                 $total += $item['price'] * $item['quantity'];
             }
             $total -= $request->discount ?? 0;
 
-            $status = $request->delivery_type == 'entrega' ? 'pending' : 'closed';
+            // Determine sale status based on delivery type
+            $status = $request->delivery_type === 'entrega' ? 'pending' : 'closed';
+
+            // Determine payment status based on payment method
+            $paymentMethods = [
+                'dinheiro' => 'paid',
+                'debito' => 'paid',
+                'credito' => 'paid',
+                'pix' => 'paid',
+                'prazo' => 'pending', // Corrigido: vendas a prazo são pendentes
+            ];
+            $paymentStatus = $paymentMethods[$request->payment_method] ?? 'pending';
 
             $sale = Sale::create([
                 'user_id' => Auth::id(),
                 'customer_id' => $request->customer_id,
                 'total' => $total,
                 'status' => $status,
-                'payment_status' => 'paid',
+                'payment_status' => $paymentStatus,
                 'payment_method' => $request->payment_method,
                 'discount' => $request->discount ?? 0,
                 'delivery_type' => $request->delivery_type,
             ]);
 
-            if ($request->delivery_type == 'entrega') {
+            // Create order for delivery
+            $order = null;
+            if ($request->delivery_type === 'entrega') {
                 $customer = Customer::find($request->customer_id);
-                Order::create([
+                $order = Order::create([
                     'customer_id' => $request->customer_id,
                     'customer_name' => $customer ? $customer->name : 'Cliente',
                     'items' => $request->cart,
                     'status' => 'todo',
+                    'sale_id' => $sale->id,
+                ]);
+
+                // Record in customer history
+                CustomerHistory::create([
+                    'customer_id' => $request->customer_id,
+                    'action' => 'sale',
+                    'description' => 'Pedido de entrega criado - Venda ID: ' . $sale->id,
                 ]);
             }
 
-            foreach ($request->cart as $item) {
-                $product = Product::lockForUpdate()->find($item['product_id']);
-                if ($product->stock < $item['quantity']) {
-                    throw new \Exception('Insufficient stock for product: ' . $product->name);
-                }
-                $product->decrement('stock', $item['quantity']);
-
-                SaleItem::create([
-                    'sale_id' => $sale->id,
-                    'product_id' => $item['product_id'],
-                    'quantity' => $item['quantity'],
-                    'unit_price' => $item['price'],
-                    'total_price' => $item['price'] * $item['quantity'],
+            // Create accounts receivable for pending payments
+            if ($paymentStatus === 'pending' && $request->customer_id) {
+                $dueDate = now()->addDays(30);
+                \App\Models\AccountsReceivable::create([
+                    'customer_id' => $request->customer_id,
+                    'order_id' => $order ? $order->id : null,
+                    'amount' => $total,
+                    'due_date' => $dueDate,
+                    'status' => 'pending',
                 ]);
 
-                // Record stock movement for sale
-                StockMovement::create([
-                    'product_id' => $item['product_id'],
-                    'type' => 'out',
-                    'quantity' => $item['quantity'],
-                    'reference_type' => 'sale',
-                    'notes' => 'Sale processed',
+                // Update customer balance
+                $customer = Customer::find($request->customer_id);
+                if ($customer) {
+                    $customer->updateBalance();
+                }
+            }
+
+            // Record cash movement only for cash payments
+            if ($paymentStatus === 'paid' && $request->payment_method === 'dinheiro' && $cashStatus) {
+                CashMovement::create([
+                    'cash_status_id' => $cashStatus->id,
+                    'type' => 'entry',
+                    'amount' => $total,
+                    'description' => 'Venda ID: ' . $sale->id,
+                    'sale_id' => $sale->id,
                     'user_id' => Auth::id(),
                 ]);
+            }
+
+            // Process stock movements for each cart item - only for immediate sales
+            if ($status === 'closed') {
+                foreach ($request->cart as $item) {
+                    $product = Product::lockForUpdate()->find($item['product_id']);
+                    if ($product->stock < $item['quantity']) {
+                        throw new \Exception('Estoque insuficiente para o produto: ' . $product->name);
+                    }
+                    $product->decrement('stock', $item['quantity']);
+
+                    SaleItem::create([
+                        'sale_id' => $sale->id,
+                        'product_id' => $item['product_id'],
+                        'quantity' => $item['quantity'],
+                        'unit_price' => $item['price'],
+                        'total_price' => $item['price'] * $item['quantity'],
+                    ]);
+
+                    // Record stock movement
+                    StockMovement::create([
+                        'product_id' => $item['product_id'],
+                        'type' => 'out',
+                        'quantity' => $item['quantity'],
+                        'reference_type' => 'sale',
+                        'notes' => 'Venda processada',
+                        'user_id' => Auth::id(),
+                    ]);
+                }
+            } else {
+                // For pending sales (delivery), create sale items without decrementing stock
+                foreach ($request->cart as $item) {
+                    SaleItem::create([
+                        'sale_id' => $sale->id,
+                        'product_id' => $item['product_id'],
+                        'quantity' => $item['quantity'],
+                        'unit_price' => $item['price'],
+                        'total_price' => $item['price'] * $item['quantity'],
+                    ]);
+                }
             }
 
             return $sale;
@@ -132,25 +213,12 @@ class PdvController extends Controller
             'quantity' => 'required|integer|min:1',
         ]);
 
-        $product = Product::lockForUpdate()->find($request->product_id);
+        // Corrigido: Não decrementar estoque no carrinho, apenas validar disponibilidade
+        $product = Product::find($request->product_id);
 
         if ($product->stock < $request->quantity) {
-            return response()->json(['error' => 'Insufficient stock'], 422);
+            return response()->json(['error' => 'Estoque insuficiente para o produto'], 422);
         }
-
-        DB::transaction(function () use ($request) {
-            $product = Product::lockForUpdate()->find($request->product_id);
-            $product->decrement('stock', $request->quantity);
-
-            StockMovement::create([
-                'product_id' => $request->product_id,
-                'type' => 'out',
-                'quantity' => $request->quantity,
-                'reference_type' => 'cart_add',
-                'notes' => 'Added to cart',
-                'user_id' => Auth::id(),
-            ]);
-        });
 
         return response()->json(['success' => true]);
     }
@@ -162,20 +230,7 @@ class PdvController extends Controller
             'quantity' => 'required|integer|min:1',
         ]);
 
-        DB::transaction(function () use ($request) {
-            $product = Product::lockForUpdate()->find($request->product_id);
-            $product->increment('stock', $request->quantity);
-
-            StockMovement::create([
-                'product_id' => $request->product_id,
-                'type' => 'in',
-                'quantity' => $request->quantity,
-                'reference_type' => 'cart_remove',
-                'notes' => 'Removed from cart',
-                'user_id' => Auth::id(),
-            ]);
-        });
-
+        // Corrigido: Não alterar estoque no carrinho
         return response()->json(['success' => true]);
     }
 
@@ -208,9 +263,28 @@ class PdvController extends Controller
     public function closeCashStore(Request $request)
     {
         $cashStatus = CashStatus::where('user_id', Auth::id())->where('status', 'open')->first();
-        $cashStatus->update(['status' => 'closed']);
+        if (!$cashStatus) {
+            return redirect()->route('pdv.report')->withErrors('No open cash to close.');
+        }
 
-        return redirect()->route('pdv.report')->with('success', 'Cash closed successfully.');
+        // Calculate final balance from cash movements
+        $totalEntries = CashMovement::where('cash_status_id', $cashStatus->id)
+            ->where('type', 'entry')
+            ->sum('amount');
+
+        $totalExits = CashMovement::where('cash_status_id', $cashStatus->id)
+            ->where('type', 'exit')
+            ->sum('amount');
+
+        $finalBalance = $cashStatus->initial_balance + $totalEntries - $totalExits;
+
+        $cashStatus->update([
+            'status' => 'closed',
+            'final_balance' => $finalBalance,
+            'closed_at' => now(),
+        ]);
+
+        return redirect()->route('pdv.report')->with('success', 'Cash closed successfully. Final balance: ' . number_format($finalBalance, 2));
     }
 
     public function report()

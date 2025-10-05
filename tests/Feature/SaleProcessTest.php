@@ -5,133 +5,186 @@ namespace Tests\Feature;
 use Tests\TestCase;
 use App\Models\User;
 use App\Models\Product;
-use App\Models\Customer;
-use App\Models\Sale;
+use App\Models\CashStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 
 class SaleProcessTest extends TestCase
 {
     use RefreshDatabase;
 
-    protected $user;
-    protected $customer;
-    protected $product;
-
-    protected function setUp(): void
+    #[Test]
+    public function test_sale_process_with_cash_open()
     {
-        parent::setUp();
+        // Create user and open cash
+        $user = User::factory()->create();
+        $this->actingAs($user);
 
-        // Create a user for authentication
-        $this->user = User::factory()->create();
-
-        // Create a customer
-        $this->customer = Customer::factory()->create();
-
-        // Create a product with stock
-        $this->product = Product::factory()->create([
-            'stock' => 10,
-            'sale_price' => 100.00,
+        CashStatus::create([
+            'user_id' => $user->id,
+            'initial_balance' => 100.00,
+            'status' => 'open',
         ]);
-    }
 
-    /** @test */
-    public function it_processes_a_sale_without_delivery()
-    {
-        $this->actingAs($this->user);
+        $product = Product::factory()->create(['stock' => 10, 'sale_price' => 50]);
 
-        $response = $this->postJson(route('pdv.sales.store'), [
+        $response = $this->postJson('/pdv/sale', [
             'cart' => [
                 [
-                    'product_id' => $this->product->id,
+                    'product_id' => $product->id,
                     'quantity' => 2,
-                    'price' => $this->product->sale_price,
+                    'price' => 50,
                 ],
             ],
             'payment_method' => 'dinheiro',
-            'discount' => 10,
-            'customer_id' => $this->customer->id,
-            'delivery_type' => 'balcao',
+            'delivery_type' => 'retirada',
         ]);
 
         $response->assertStatus(200);
-        $response->assertJsonStructure(['sale' => ['id', 'status', 'total', 'payment_method']]);
         $this->assertDatabaseHas('sales', [
-            'id' => $response->json('sale.id'),
-            'status' => 'closed',
-            'payment_method' => 'dinheiro',
+            'user_id' => $user->id,
+            'total' => 100,
+            'payment_status' => 'paid',
         ]);
-        $this->assertDatabaseHas('sale_items', [
-            'sale_id' => $response->json('sale.id'),
-            'product_id' => $this->product->id,
+        $this->assertDatabaseHas('cash_movements', [
+            'type' => 'entry',
+            'amount' => 100,
+            'user_id' => $user->id,
+        ]);
+        $this->assertDatabaseHas('stock_movements', [
+            'type' => 'out',
             'quantity' => 2,
-        ]);
-        $this->assertDatabaseHas('products', [
-            'id' => $this->product->id,
-            'stock' => 8, // stock reduced by 2
+            'user_id' => $user->id,
         ]);
     }
 
-    /** @test */
-    public function it_processes_a_sale_with_delivery_and_creates_order()
+    #[Test]
+    public function test_sale_process_without_cash_open()
     {
-        $this->actingAs($this->user);
+        $user = User::factory()->create();
+        $this->actingAs($user);
 
-        $response = $this->postJson(route('pdv.sales.store'), [
+        $product = Product::factory()->create(['stock' => 10, 'sale_price' => 50]);
+
+        $response = $this->postJson('/pdv/sale', [
             'cart' => [
                 [
-                    'product_id' => $this->product->id,
-                    'quantity' => 3,
-                    'price' => $this->product->sale_price,
+                    'product_id' => $product->id,
+                    'quantity' => 2,
+                    'price' => 50,
                 ],
             ],
-            'payment_method' => 'cartao',
-            'discount' => 0,
-            'customer_id' => $this->customer->id,
-            'delivery_type' => 'entrega',
+            'payment_method' => 'dinheiro',
+            'delivery_type' => 'retirada',
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJson(['error' => 'Caixa não está aberto. Abra o caixa antes de realizar vendas em dinheiro.']);
+    }
+
+    #[Test]
+    public function test_sale_process_with_debit_card()
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        $product = Product::factory()->create(['stock' => 10, 'sale_price' => 50]);
+
+        $response = $this->postJson('/pdv/sale', [
+            'cart' => [
+                [
+                    'product_id' => $product->id,
+                    'quantity' => 2,
+                    'price' => 50,
+                ],
+            ],
+            'payment_method' => 'debito',
+            'delivery_type' => 'retirada',
         ]);
 
         $response->assertStatus(200);
-        $response->assertJsonStructure(['sale' => ['id', 'status', 'total', 'payment_method']]);
         $this->assertDatabaseHas('sales', [
-            'id' => $response->json('sale.id'),
-            'status' => 'pending',
-            'payment_method' => 'cartao',
+            'user_id' => $user->id,
+            'total' => 100,
+            'payment_status' => 'paid',
+            'payment_method' => 'debito',
         ]);
-        $this->assertDatabaseHas('sale_items', [
+        $this->assertDatabaseHas('stock_movements', [
+            'type' => 'out',
+            'quantity' => 2,
+            'user_id' => $user->id,
+        ]);
+        // Debit card payments should not create cash movements
+        $this->assertDatabaseMissing('cash_movements', [
             'sale_id' => $response->json('sale.id'),
-            'product_id' => $this->product->id,
-            'quantity' => 3,
-        ]);
-        $this->assertDatabaseHas('orders', [
-            'customer_id' => $this->customer->id,
-            'status' => 'todo',
-        ]);
-        $this->assertDatabaseHas('products', [
-            'id' => $this->product->id,
-            'stock' => 7, // stock reduced by 3
         ]);
     }
 
-    /** @test */
-    public function it_fails_when_insufficient_stock()
+    #[Test]
+    public function test_sale_process_with_credit_card()
     {
-        $this->actingAs($this->user);
+        $user = User::factory()->create();
+        $this->actingAs($user);
 
-        $response = $this->postJson(route('pdv.sales.store'), [
+        $product = Product::factory()->create(['stock' => 10, 'sale_price' => 50]);
+
+        $response = $this->postJson('/pdv/sale', [
             'cart' => [
                 [
-                    'product_id' => $this->product->id,
-                    'quantity' => 20,
-                    'price' => $this->product->sale_price,
+                    'product_id' => $product->id,
+                    'quantity' => 2,
+                    'price' => 50,
+                ],
+            ],
+            'payment_method' => 'credito',
+            'delivery_type' => 'retirada',
+        ]);
+
+        $response->assertStatus(200);
+        $this->assertDatabaseHas('sales', [
+            'user_id' => $user->id,
+            'total' => 100,
+            'payment_status' => 'paid',
+            'payment_method' => 'credito',
+        ]);
+        $this->assertDatabaseHas('stock_movements', [
+            'type' => 'out',
+            'quantity' => 2,
+            'user_id' => $user->id,
+        ]);
+    }
+
+    #[Test]
+    public function test_sale_process_with_pix()
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        $product = Product::factory()->create(['stock' => 10, 'sale_price' => 50]);
+
+        $response = $this->postJson('/pdv/sale', [
+            'cart' => [
+                [
+                    'product_id' => $product->id,
+                    'quantity' => 2,
+                    'price' => 50,
                 ],
             ],
             'payment_method' => 'pix',
-            'discount' => 0,
-            'customer_id' => $this->customer->id,
-            'delivery_type' => 'balcao',
+            'delivery_type' => 'retirada',
         ]);
 
-        $response->assertStatus(500);
-        $this->assertStringContainsString('Insufficient stock', $response->json('error'));
+        $response->assertStatus(200);
+        $this->assertDatabaseHas('sales', [
+            'user_id' => $user->id,
+            'total' => 100,
+            'payment_status' => 'paid',
+            'payment_method' => 'pix',
+        ]);
+        $this->assertDatabaseHas('stock_movements', [
+            'type' => 'out',
+            'quantity' => 2,
+            'user_id' => $user->id,
+        ]);
     }
 }

@@ -11,6 +11,9 @@ class Supplier extends Model
         'email',
         'phone',
         'address',
+        'cnpj',
+        'inscricao_estadual',
+        'inscricao_municipal',
     ];
 
     public function accountsPayable()
