@@ -1,3 +1,4 @@
+
 <?php
 
 use Illuminate\Support\Facades\Route;
@@ -10,6 +11,7 @@ use App\Http\Controllers\PdvController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\StockReportController;
+use App\Http\Controllers\SaleController;
 
 // ==========================================
 // REDIRECIONAMENTO
@@ -54,9 +56,8 @@ Route::middleware(['auth', 'role:admin,super_admin'])->get('customers/{id}/edit-
 Route::middleware(['auth', 'role:admin,super_admin'])->put('customers/{id}/update-contact', [CustomerController::class, 'updateContact'])->name('customers.update-contact');
 
 // ==========================================
-// PEDIDOS
+// PEDIDOS (moved to routes/orders.php)
 // ==========================================
-Route::middleware(['auth', 'role:admin,super_admin'])->get('orders', [OrderController::class, 'index'])->name('orders.index');
 
 // ==========================================
 // ADMINISTRAÇÃO DE USUÁRIOS
@@ -77,30 +78,12 @@ Route::middleware(['auth', 'role:admin,super_admin'])
         ]);
 });
 
-// ==========================================
-// PDV (VENDAS)
-// ==========================================
-Route::middleware(['auth', 'role:super_admin,admin,cashier'])
-    ->prefix('pdv')
-    ->name('pdv.')
-    ->group(function () {
-        Route::get('/', [PdvController::class, 'index'])->name('sales');
-        Route::get('create', [PdvController::class, 'create'])->name('sales.create');
-        Route::post('sale', [PdvController::class, 'processSale'])->name('sales.store');
-        Route::get('product', [PdvController::class, 'getProduct'])->name('product.show');
-        Route::post('add-item', [PdvController::class, 'addItem'])->name('add-item');
-        Route::post('remove-item', [PdvController::class, 'removeItem'])->name('remove-item');
-        Route::get('{id}', [PdvController::class, 'show'])->name('sales.show');
 
-        // Abertura e fechamento de caixa
-        Route::get('open-cash', [PdvController::class, 'openCash'])->name('open-cash');
-        Route::post('open-cash', [PdvController::class, 'openCashStore'])->name('open-cash.store');
-        Route::get('close-cash', [PdvController::class, 'closeCash'])->name('close-cash');
-        Route::post('close-cash', [PdvController::class, 'closeCashStore'])->name('close-cash.store');
 
-        // Relatórios de vendas
-        Route::get('report', [PdvController::class, 'report'])->name('report');
-});
+// ==========================================
+// VENDAS (API)
+// ==========================================
+Route::middleware(['auth', 'role:super_admin,admin,cashier,user'])->post('/sales', [\App\Http\Controllers\SaleController::class, 'createSale'])->name('api.sales.create');
 
 // ==========================================
 // ESTOQUE
@@ -151,3 +134,25 @@ Route::middleware(['auth', 'role:admin,super_admin'])->resource('accounts_receiv
 Route::middleware(['auth', 'role:admin,super_admin'])->patch('accounts_receivable/{id}/mark-as-paid', [AccountsReceivableController::class, 'markAsPaid'])->name('accounts_receivable.mark_as_paid');
 Route::middleware(['auth', 'role:admin,super_admin'])->resource('accounts_payable', AccountsPayableController::class);
 Route::middleware(['auth', 'role:admin,super_admin'])->get('cash_flow', [App\Http\Controllers\CashFlowController::class, 'index'])->name('cash_flow.index');
+
+// Reverse geocode route
+Route::middleware('auth')->get('reverse-geocode', function (\Illuminate\Http\Request $request) {
+    $lat = $request->query('lat');
+    $lon = $request->query('lon');
+
+    if (!$lat || !$lon) {
+        return response()->json(['error' => 'Latitude and longitude required'], 400);
+    }
+
+    $response = \Illuminate\Support\Facades\Http::get("https://nominatim.openstreetmap.org/reverse?format=json&lat={$lat}&lon={$lon}");
+
+    if ($response->successful()) {
+        $data = $response->json();
+        return response()->json([
+            'address' => $data['display_name'] ?? 'Address not found',
+            'postcode' => $data['address']['postcode'] ?? null,
+        ]);
+    }
+
+    return response()->json(['error' => 'Failed to retrieve address'], 500);
+})->name('reverse-geocode');

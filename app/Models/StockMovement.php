@@ -25,6 +25,7 @@ class StockMovement extends Model
     protected $casts = [
         'quantity' => 'decimal:2',
         'purchase_date' => 'date',
+        'created_at' => 'datetime',
     ];
 
     public function product()

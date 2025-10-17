@@ -2,39 +2,26 @@
 
 @section('content')
 <div class="container mt-4">
-    <h1>Entrada por Nota Fiscal</h1>
+    <h1>Registrar Saída de Estoque</h1>
 
-    <form action="{{ route('estoque.invoice_entrada.store') }}" method="POST" id="invoiceForm">
+    <form action="{{ route('estoque.saida.store') }}" method="POST" id="saidaForm">
         @csrf
 
-        <div class="row">
+        <div class="row mb-3">
             <div class="col-md-4">
-                <label for="invoice_number" class="form-label">Número da Nota Fiscal <span class="text-danger">*</span></label>
-                <input type="text" name="invoice_number" id="invoice_number" class="form-control" value="{{ old('invoice_number') }}" required>
-                @error('invoice_number')
-                    <div class="text-danger">{{ $message }}</div>
-                @enderror
-            </div>
-            <div class="col-md-4">
-                <label for="supplier_id" class="form-label">Fornecedor <span class="text-danger">*</span></label>
-                <select name="supplier_id" id="supplier_id" class="form-control" required>
+                <label for="customer_id" class="form-label">Cliente/Setor <span class="text-danger">*</span></label>
+                <select name="customer_id" id="customer_id" class="form-control" required>
                     <option value="">Selecione</option>
-                    @foreach($suppliers as $supplier)
-                        <option value="{{ $supplier->id }}" {{ old('supplier_id') == $supplier->id ? 'selected' : '' }}>
-                            {{ $supplier->name }}
+                    @foreach($customers as $customer)
+                        <option value="{{ $customer->id }}" {{ old('customer_id') == $customer->id ? 'selected' : '' }}>
+                            {{ $customer->name }}
                         </option>
                     @endforeach
                 </select>
-                @error('supplier_id')
-                    <div class="text-danger">{{ $message }}</div>
-                @enderror
             </div>
             <div class="col-md-4">
-                <label for="purchase_date" class="form-label">Data da Compra <span class="text-danger">*</span></label>
-                <input type="date" name="purchase_date" id="purchase_date" class="form-control" value="{{ old('purchase_date', date('Y-m-d')) }}" required>
-                @error('purchase_date')
-                    <div class="text-danger">{{ $message }}</div>
-                @enderror
+                <label for="saida_date" class="form-label">Data da Saída <span class="text-danger">*</span></label>
+                <input type="date" name="saida_date" id="saida_date" class="form-control" value="{{ old('saida_date', date('Y-m-d')) }}" required>
             </div>
         </div>
 
@@ -43,32 +30,24 @@
         <h3>Produtos</h3>
         <div id="productsContainer">
             <div class="product-item row mb-3">
-                <div class="col-md-3">
+                <div class="col-md-4">
                     <label class="form-label">Produto <span class="text-danger">*</span></label>
                     <select name="products[0][product_id]" class="form-control product-select" required>
-                        <option value="">Selecione ou Novo</option>
+                        <option value="">Selecione</option>
                         @foreach($products as $product)
-                            <option value="{{ $product->id }}">{{ $product->name }}</option>
+                            <option value="{{ $product->id }}" data-quantity="{{ $product->quantity }}">
+                                {{ $product->name }} (Disponível: {{ $product->quantity }})
+                            </option>
                         @endforeach
-                        <option value="new">Novo Produto</option>
                     </select>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-3">
                     <label class="form-label">Quantidade <span class="text-danger">*</span></label>
-                    <input type="number" name="products[0][quantity]" class="form-control" min="1" required>
+                    <input type="number" name="products[0][quantity]" class="form-control product-quantity" min="1" required>
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label">Preço Unitário</label>
-                    <input type="number" name="products[0][unit_price]" class="form-control" step="0.01" min="0">
-                </div>
-                <div class="col-md-3 new-product-fields" style="display: none;">
-                    <label class="form-label">Nome do Novo Produto <span class="text-danger">*</span></label>
-                    <input type="text" name="products[0][name]" class="form-control">
-                    <input type="hidden" name="products[0][new_product]" value="0">
-                </div>
-                <div class="col-md-2">
+                <div class="col-md-3">
                     <label class="form-label">&nbsp;</label>
-                    <button type="button" class="btn btn-danger remove-product" style="display: none;">Remover</button>
+                    <button type="button" class="btn btn-danger remove-product d-none">Remover</button>
                 </div>
             </div>
         </div>
@@ -76,7 +55,7 @@
         <button type="button" id="addProduct" class="btn btn-secondary mb-3">Adicionar Produto</button>
 
         <div>
-            <button type="submit" class="btn btn-primary">Salvar Entrada</button>
+            <button type="submit" class="btn btn-primary">Registrar Saída</button>
             <a href="{{ route('estoque.index') }}" class="btn btn-secondary">Cancelar</a>
         </div>
     </form>
@@ -86,6 +65,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     let productIndex = 1;
 
+    // Adicionar produto
     document.getElementById('addProduct').addEventListener('click', function() {
         const container = document.getElementById('productsContainer');
         const newItem = container.querySelector('.product-item').cloneNode(true);
@@ -93,35 +73,37 @@ document.addEventListener('DOMContentLoaded', function() {
         inputs.forEach(input => {
             if (input.name) {
                 input.name = input.name.replace(/\[\d+\]/, '[' + productIndex + ']');
-                input.value = '';
+                if(input.tagName === 'INPUT') input.value = '';
+                if(input.tagName === 'SELECT') input.selectedIndex = 0;
             }
         });
-        newItem.querySelector('.remove-product').style.display = 'block';
+        newItem.querySelector('.remove-product').classList.remove('d-none');
         container.appendChild(newItem);
         productIndex++;
     });
 
+    // Remover produto
     document.addEventListener('click', function(e) {
         if (e.target.classList.contains('remove-product')) {
             e.target.closest('.product-item').remove();
         }
     });
 
-    document.addEventListener('change', function(e) {
-        if (e.target.classList.contains('product-select')) {
-            const item = e.target.closest('.product-item');
-            const newFields = item.querySelector('.new-product-fields');
-            const newProductInput = item.querySelector('input[name*="[new_product]"]');
-            if (e.target.value === 'new') {
-                newFields.style.display = 'block';
-                newProductInput.value = '1';
-                item.querySelector('input[name*="[name]"]').required = true;
-            } else {
-                newFields.style.display = 'none';
-                newProductInput.value = '0';
-                item.querySelector('input[name*="[name]"]').required = false;
+    // Validar quantidade antes do submit
+    document.getElementById('saidaForm').addEventListener('submit', function(e) {
+        let valid = true;
+        const items = document.querySelectorAll('.product-item');
+        items.forEach(item => {
+            const select = item.querySelector('.product-select');
+            const quantityInput = item.querySelector('.product-quantity');
+            const available = parseInt(select.selectedOptions[0]?.dataset.quantity || 0);
+            const requested = parseInt(quantityInput.value || 0);
+            if(requested > available){
+                valid = false;
+                showAlert(`Quantidade solicitada de "${select.selectedOptions[0].text}" excede o estoque disponível (${available})!`, true);
             }
-        }
+        });
+        if(!valid) e.preventDefault();
     });
 });
 </script>

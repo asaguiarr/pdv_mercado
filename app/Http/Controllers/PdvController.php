@@ -21,7 +21,21 @@ class PdvController extends Controller
     {
         $products = Product::all();
         $currentSale = Sale::where('user_id', Auth::id())->where('status', 'open')->first();
-        $sales = Sale::where('user_id', Auth::id())->get();
+
+        $query = Sale::where('user_id', Auth::id());
+
+        if (request('search')) {
+            $search = request('search');
+            $query->where(function($q) use ($search) {
+                $q->where('id', $search)
+                  ->orWhereHas('customer', function($q) use ($search) {
+                      $q->where('name', 'like', "%$search%");
+                  });
+            });
+        }
+
+        $sales = $query->paginate(10);
+
         return view('pdv.index', compact('products', 'currentSale', 'sales'));
     }
 
@@ -194,14 +208,9 @@ class PdvController extends Controller
     public function getProduct(Request $request)
     {
         $search = $request->query('search');
-        if (is_numeric($search)) {
-            $product = Product::where('code', $search)->first();
-            if ($product) {
-                return response()->json([$product]);
-            }
-        }
         $products = Product::where('name', 'like', "%$search%")
             ->orWhere('code', 'like', "%$search%")
+            ->limit(10)
             ->get();
         return response()->json($products);
     }
@@ -213,12 +222,23 @@ class PdvController extends Controller
             'quantity' => 'required|integer|min:1',
         ]);
 
-        // Corrigido: Não decrementar estoque no carrinho, apenas validar disponibilidade
-        $product = Product::find($request->product_id);
+        $product = Product::lockForUpdate()->find($request->product_id);
 
         if ($product->stock < $request->quantity) {
-            return response()->json(['error' => 'Estoque insuficiente para o produto'], 422);
+            return response()->json(['error' => 'Insufficient stock'], 422);
         }
+
+        $product->decrement('stock', $request->quantity);
+
+        // Record stock movement
+        StockMovement::create([
+            'product_id' => $request->product_id,
+            'type' => 'out',
+            'quantity' => $request->quantity,
+            'reference_type' => 'cart_add',
+            'notes' => 'Added to cart',
+            'user_id' => Auth::id(),
+        ]);
 
         return response()->json(['success' => true]);
     }
@@ -230,7 +250,19 @@ class PdvController extends Controller
             'quantity' => 'required|integer|min:1',
         ]);
 
-        // Corrigido: Não alterar estoque no carrinho
+        $product = Product::find($request->product_id);
+        $product->increment('stock', $request->quantity);
+
+        // Record stock movement
+        StockMovement::create([
+            'product_id' => $request->product_id,
+            'type' => 'in',
+            'quantity' => $request->quantity,
+            'reference_type' => 'cart_remove',
+            'notes' => 'Removed from cart',
+            'user_id' => Auth::id(),
+        ]);
+
         return response()->json(['success' => true]);
     }
 

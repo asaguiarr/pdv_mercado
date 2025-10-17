@@ -15,7 +15,7 @@ return new class extends Migration
             $table->decimal('total', 10, 2)->default(0);
             $table->enum('status', ['open', 'closed'])->default('open');
             $table->enum('payment_status', ['paid', 'pending', 'payment_on_delivery'])->default('pending');
-            $table->enum('delivery_type', ['pickup', 'delivery'])->default('pickup');
+            $table->enum('delivery_type', ['retirada', 'entrega'])->default('retirada');
             $table->timestamp('closed_at')->nullable();
             $table->timestamps();
         });

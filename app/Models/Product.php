@@ -24,7 +24,7 @@ class Product extends Model
         'cost_price' => 'decimal:2',
         'profit_margin' => 'decimal:2',
         'sale_price' => 'decimal:2',
-        'stock' => 'decimal:2',
+        'stock' => 'float',
         'active' => 'boolean',
     ];
 

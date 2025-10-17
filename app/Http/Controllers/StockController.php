@@ -45,7 +45,7 @@ class StockController extends Controller
             'type' => 'in',
             'quantity' => $request->quantity,
             'reference_type' => 'manual',
-            'notes' => 'Manual stock entry',
+            'notes' => $request->notes ?? 'Manual stock entry',
             'user_id' => Auth::id(),
         ]);
 

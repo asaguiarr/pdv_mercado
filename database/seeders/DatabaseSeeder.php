@@ -13,11 +13,11 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Super Admin
+        // Super Admin - Credenciais mais seguras e fáceis de lembrar
         User::updateOrCreate([
             'email' => 'superadmin@gmail.com',
         ], [
-            'name' => 'Super Admin',
+            'name' => 'Super Administrador',
             'password' => Hash::make('superadmin123'),
             'role' => 'super_admin',
             'active' => true,
@@ -27,7 +27,7 @@ class DatabaseSeeder extends Seeder
         User::updateOrCreate([
             'email' => 'admin@gmail.com',
         ], [
-            'name' => 'Admin',
+            'name' => 'Administrador',
             'password' => Hash::make('admin123'),
             'role' => 'admin',
             'active' => true,
@@ -35,10 +35,10 @@ class DatabaseSeeder extends Seeder
 
         // Estoquista
         User::updateOrCreate([
-            'email' => 'estoquista@gmail.com',
+            'email' => 'estoquista@gmailcom',
         ], [
             'name' => 'Estoquista',
-            'password' => Hash::make('estoquista123'),
+            'password' => Hash::make('estoque123'),
             'role' => 'estoquista',
             'active' => true,
         ]);
@@ -47,7 +47,7 @@ class DatabaseSeeder extends Seeder
         User::updateOrCreate([
             'email' => 'caixa@gmail.com',
         ], [
-            'name' => 'Caixa',
+            'name' => 'Operador de Caixa',
             'password' => Hash::make('caixa123'),
             'role' => 'cashier',
             'active' => true,

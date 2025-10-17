@@ -18,21 +18,15 @@
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
 
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-        }
+        body { font-family: 'Inter', sans-serif; }
 
         /* Sidebar */
         .sidebar-icon {
             transition: all 0.2s ease-in-out;
             cursor: pointer;
         }
-        .sidebar-icon:hover {
-            transform: scale(1.1);
-        }
-        .bg-custom-sidebar {
-            background-color: #2D3748;
-        }
+        .sidebar-icon:hover { transform: scale(1.1); }
+        .bg-custom-sidebar { background-color: #2D3748; }
 
         /* Hover customizado */
         .hover-text-warning:hover { color: #ffc107 !important; }
@@ -49,6 +43,18 @@
 </head>
 <body class="bg-light">
 
+@php
+    $sidebarMenus = [
+        ['title'=>'Painel', 'route'=>'dashboard', 'icon'=>'fa-tachometer-alt', 'roles'=>['all']],
+        ['title'=>'PDV', 'route'=>'pdv.sales', 'icon'=>'fa-cash-register', 'roles'=>['all']],
+        ['title'=>'Produtos', 'route'=>'products.index', 'icon'=>'fa-box-open', 'roles'=>['admin','super_admin']],
+        ['title'=>'Clientes', 'route'=>'customers.index', 'icon'=>'fa-users', 'roles'=>['admin','super_admin']],
+        ['title'=>'Pedidos', 'route'=>'orders.index', 'icon'=>'fa-truck', 'roles'=>['admin','super_admin']],
+        ['title'=>'Estoque', 'route'=>'estoque.index', 'icon'=>'fa-warehouse', 'roles'=>['estoquista','admin','super_admin']],
+        ['title'=>'Administração', 'route'=>'admin.dashboard', 'icon'=>'fa-cog', 'roles'=>['super_admin']],
+    ];
+@endphp
+
 <div id="app-container" class="d-flex">
 
     <!-- Sidebar -->
@@ -56,11 +62,13 @@
         <div>
             <div class="text-center fw-bold fs-4 text-warning mb-4">BP</div>
             <nav class="d-flex flex-column align-items-center gap-3">
-
-                <!-- Dashboard -->
-                <a href="{{ route('dashboard') }}" class="sidebar-icon" title="Painel">
-                    <i class="fas fa-tachometer-alt fs-5 text-light hover-text-warning"></i>
-                </a>
+                @foreach($sidebarMenus as $menu)
+                    @if(in_array('all', $menu['roles']) || auth()->user()->hasAnyRole($menu['roles']))
+                        <a href="{{ route($menu['route']) }}" class="sidebar-icon" title="{{ $menu['title'] }}">
+                            <i class="fas {{ $menu['icon'] }} fs-5 text-light hover-text-warning"></i>
+                        </a>
+                    @endif
+                @endforeach
             </nav>
         </div>
 
@@ -105,11 +113,10 @@
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
 
-<!-- jQuery (necessário p/ DataTables) -->
+<!-- jQuery -->
 <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
 
 <script>
-    // Função de alerta customizado (fallback simples)
     function showAlert(message, isError = false) {
         Swal.fire({
             text: message,
@@ -121,7 +128,6 @@
         });
     }
 
-    // Inicialização automática de DataTables em todas as tabelas com .datatable
     document.addEventListener("DOMContentLoaded", function () {
         if ($(".datatable").length) {
             $(".datatable").DataTable({
@@ -134,7 +140,6 @@
     });
 </script>
 
-{{-- Stack para cada view incluir JS próprio --}}
 @stack('scripts')
 
 </body>

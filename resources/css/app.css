@@ -1,0 +1,47 @@
+@import 'bootstrap/dist/css/bootstrap.min.css';
+
+/* Custom styles for Bootstrap overrides if needed */
+body {
+    font-family: 'Inter', sans-serif;
+}
+
+/* Sidebar styles */
+.sidebar {
+    width: 80px;
+}
+
+.sidebar-icon {
+    transition: all 0.2s ease-in-out;
+    cursor: pointer;
+}
+
+.sidebar-icon:hover {
+    transform: scale(1.1);
+}
+
+.hover-text-warning:hover {
+    color: #ffc107 !important;
+}
+
+.hover-text-danger:hover {
+    color: #dc3545 !important;
+}
+
+/* Customer photo styles */
+.customer-photo {
+    max-width: 150px;
+    border-radius: 50%;
+}
+
+.customer-photo-large {
+    max-width: 200px;
+}
+
+/* PDV styles */
+.discount-input {
+    width: 100px;
+}
+
+.sticky-checkout {
+    top: 1rem;
+}

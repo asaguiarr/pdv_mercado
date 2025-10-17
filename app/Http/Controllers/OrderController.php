@@ -5,12 +5,16 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Order;
 use App\Models\Customer;
+use App\Models\Product;
+use App\Models\StockMovement;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class OrderController extends Controller
 {
     public function index()
     {
-        $orders = Order::all();
+        $orders = Order::paginate(15); // Paginação com 15 registros por página
         return view('orders.index', compact('orders'));
     }
 
@@ -59,12 +63,19 @@ class OrderController extends Controller
             'status' => 'required|in:todo,doing,delivery,done',
         ]);
 
+        $oldStatus = $order->status;
+
         $order->update([
             'customer_id' => $request->customer_id,
             'customer_name' => $request->customer_name,
             'items' => json_encode($request->items),
             'status' => $request->status,
         ]);
+
+        // If status changed to 'done' and was not 'done' before, decrement stock
+        if ($request->status === 'done' && $oldStatus !== 'done') {
+            $this->decrementStockForOrder($order);
+        }
 
         return redirect()->route('orders.index')->with('success', 'Order updated successfully.');
     }
@@ -73,5 +84,28 @@ class OrderController extends Controller
     {
         $order->delete();
         return redirect()->route('orders.index')->with('success', 'Order deleted successfully.');
+    }
+
+    private function decrementStockForOrder(Order $order)
+    {
+        DB::transaction(function () use ($order) {
+            foreach ($order->items as $item) {
+                $product = Product::lockForUpdate()->find($item['product_id']);
+                if ($product->stock < $item['quantity']) {
+                    throw new \Exception('Estoque insuficiente para o produto: ' . $product->name);
+                }
+                $product->decrement('stock', $item['quantity']);
+
+                // Record stock movement
+                StockMovement::create([
+                    'product_id' => $item['product_id'],
+                    'type' => 'out',
+                    'quantity' => $item['quantity'],
+                    'reference_type' => 'order_delivery',
+                    'notes' => 'Entrega do pedido ID: ' . $order->id,
+                    'user_id' => Auth::id(),
+                ]);
+            }
+        });
     }
 }

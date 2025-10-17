@@ -18,27 +18,18 @@
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
 
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-        }
+        body { font-family: 'Inter', sans-serif; }
 
         /* Sidebar */
-        .sidebar-icon {
-            transition: all 0.2s ease-in-out;
-            cursor: pointer;
-        }
-        .sidebar-icon:hover {
-            transform: scale(1.1);
-        }
-        .bg-custom-sidebar {
-            background-color: #2D3748;
-        }
+        .sidebar-icon { transition: all 0.2s ease-in-out; cursor: pointer; }
+        .sidebar-icon:hover { transform: scale(1.1); }
+        .bg-custom-sidebar { background-color: #2D3748; }
 
-        /* Hover customizado */
+        /* Hover colors */
         .hover-text-warning:hover { color: #ffc107 !important; }
         .hover-text-danger:hover { color: #dc3545 !important; }
 
-        /* Scrollbar custom */
+        /* Scrollbar */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
@@ -56,16 +47,38 @@
         <div>
             <div class="text-center fw-bold fs-4 text-warning mb-4">BP</div>
             <nav class="d-flex flex-column align-items-center gap-3">
-
                 <!-- Dashboard -->
                 <a href="{{ route('dashboard') }}" class="sidebar-icon" title="Painel">
                     <i class="fas fa-tachometer-alt fs-5 text-light hover-text-warning"></i>
                 </a>
 
-                <!-- PDV (Caixa) -->
+                <!-- PDV -->
                 <a href="{{ route('pdv.sales') }}" class="sidebar-icon" title="PDV">
                     <i class="fas fa-cash-register fs-5 text-light hover-text-warning"></i>
                 </a>
+
+                <!-- Produtos -->
+                @if(auth()->user()->hasAnyRole(['admin', 'super_admin']))
+                    <a href="{{ route('products.index') }}" class="sidebar-icon" title="Produtos">
+                        <i class="fas fa-box-open fs-5 text-light hover-text-warning"></i>
+                    </a>
+                    <a href="{{ route('customers.index') }}" class="sidebar-icon" title="Clientes">
+                        <i class="fas fa-users fs-5 text-light hover-text-warning"></i>
+                    </a>
+                    <a href="{{ route('orders.index') }}" class="sidebar-icon" title="Pedidos">
+                        <i class="fas fa-truck-loading fs-5 text-light hover-text-warning"></i>
+                    </a>
+                @endif
+
+                <!-- Estoque -->
+                @if(auth()->user()->hasAnyRole(['estoquista','admin','super_admin']))
+                    <a href="{{ route('estoque.entrada') }}" class="sidebar-icon" title="Entrada Estoque">
+                        <i class="fas fa-plus-circle fs-5 text-light hover-text-warning"></i>
+                    </a>
+                    <a href="{{ route('estoque.saida') }}" class="sidebar-icon" title="Saída Estoque">
+                        <i class="fas fa-minus-circle fs-5 text-light hover-text-warning"></i>
+                    </a>
+                @endif
             </nav>
         </div>
 
@@ -92,29 +105,21 @@
 @includeIf('modals.payment')
 
 <!-- Alert customizado -->
-<div id="custom-alert" class="fixed-top top-0 end-0 m-3 alert alert-success alert-dismissible fade" role="alert">
+<div id="custom-alert" class="position-fixed top-0 end-0 m-3 alert alert-success alert-dismissible fade d-none" role="alert">
     <span id="custom-alert-message"></span>
     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
 </div>
 
-<!-- Bootstrap -->
+<!-- Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-<!-- SweetAlert2 -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-<!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<!-- DataTables -->
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
-
-<!-- jQuery (necessário p/ DataTables) -->
 <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
 
 <script>
-    // Função de alerta customizado (fallback simples)
+    // Alert customizado
     function showAlert(message, isError = false) {
         Swal.fire({
             text: message,
@@ -126,21 +131,17 @@
         });
     }
 
-    // Inicialização automática de DataTables em todas as tabelas com .datatable
+    // Inicializa DataTables
     document.addEventListener("DOMContentLoaded", function () {
         if ($(".datatable").length) {
             $(".datatable").DataTable({
                 pageLength: 10,
-                language: {
-                    url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/pt-BR.json"
-                }
+                language: { url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/pt-BR.json" }
             });
         }
     });
 </script>
 
-{{-- Stack para cada view incluir JS próprio --}}
 @stack('scripts')
-
 </body>
 </html>
