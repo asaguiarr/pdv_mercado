@@ -219,6 +219,18 @@
     </div>
 </div>
 
+@php
+$paymentColors = $sales->groupBy('payment_method')->keys()->map(function($method) {
+    switch($method) {
+        case 'dinheiro': return '#28a745';
+        case 'pix': return '#ffc107';
+        case 'debito': return '#17a2b8';
+        case 'credito': return '#6c757d';
+        default: return '#6c757d';
+    }
+})->toArray();
+@endphp
+
 @push('scripts')
 <script>
 $(document).ready(function() {
@@ -230,6 +242,8 @@ $(document).ready(function() {
     const paymentLabels = Object.keys(paymentData);
     const paymentValues = Object.values(paymentData);
 
+    const paymentColors = @json($paymentColors);
+
     if (paymentLabels.length > 0) {
         const ctx = document.getElementById('paymentChart').getContext('2d');
         new Chart(ctx, {
@@ -238,12 +252,7 @@ $(document).ready(function() {
                 labels: paymentLabels.map(label => label.charAt(0).toUpperCase() + label.slice(1)),
                 datasets: [{
                     data: paymentValues,
-                    backgroundColor: [
-                        '#28a745', // dinheiro - verde
-                        '#17a2b8', // cartao - azul
-                        '#ffc107', // pix - amarelo
-                        '#6c757d'  // outros - cinza
-                    ],
+                    backgroundColor: paymentColors,
                     borderWidth: 0
                 }]
             },

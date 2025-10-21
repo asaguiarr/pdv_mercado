@@ -37,7 +37,7 @@
                                    placeholder="Nome, código ou código de barras..." autofocus>
                         </div>
                         <div class="col-12 col-md-4">
-                            <button id="search-btn" class="btn btn-primary btn-lg w-100 shadow-sm">
+                            <button type="button" id="search-btn" class="btn btn-primary btn-lg w-100 shadow-sm">
                                 <i class="fas fa-search me-2"></i>Buscar
                             </button>
                         </div>
